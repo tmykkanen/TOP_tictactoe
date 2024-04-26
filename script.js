@@ -8,98 +8,176 @@
 //  - updateScreen()
 //  - clickHandlerBoard()
 
-// *** GAME FLOW *** //
-// Init empty 3x3 board
-// Print empty board
-// Prompt for Player1 Choice
-// - Process player 1 choice
-// - Print updated board
+// GAME FLOW
+// 1. Render empty board
+// 2. Prompt for player choice
+// 3. Check validity of player choice
+// 4. Update board
+// 5. Check win condition
+// 6. Render board / win
 
-// stores the state of the game
-const Gameboard = (function Gameboard() {
-  // 3x3 array of boxes
-  const rows = 3;
-  const columns = 3;
+// *** MODULE *** //
+const GameModule = (function Gameboard() {
+  const board = ['', '', '', '', '', '', '', '', ''];
+  const players = [
+    {
+      name: 'Player 1',
+      mark: 'X',
+      active: true,
+    },
+    {
+      name: 'Player 2',
+      mark: 'O',
+      active: false,
+    },
+  ];
 
-  // TODO: use a flat array
-
-  const board = [];
-  const initializeBoard = () => {
-    for (let row = 0; row < rows; row += 1) {
-      board[row] = [];
-      for (let column = 0; column < columns; column += 1) {
-        // board[row][column] = [`${row}:${column}`];
-        board[row][column] = '';
-      }
-    }
-    console.log(board);
-    printBoard();
+  const resetBoard = () => {
+    // board = ['', '', '', '', '', '', '', '', ''];
   };
 
-  // *** TEMP BOARD FOR DEVELOPMENT *** //
-  // let board = [['X', 'O', ''], ['X', '', 'O'], ['', 'X', 'O']];
-
-  // Gameboard() methods
   const getBoard = () => board;
 
-  const printBoard = () => {
-    let displayBoard = '';
+  const getPlayers = () => players;
 
-    for (let row = 0; row < board.length; row += 1) {
-      // start of row
-      displayBoard += '|';
-      for (let column = 0; column < columns; column += 1) {
-        if (!board[row][column]) displayBoard += ' ';
-        displayBoard += ` ${board[row][column]} |`;
-      }
-      displayBoard += '\n';
-    }
-
-    console.log(displayBoard);
+  const setBoardCell = (activePlayer, playerChoice) => {
+    board[playerChoice] = activePlayer.mark;
   };
-
-  const setBoardCell = (cord1, cord2, mark) => {
-    console.log('Mark Cell success!');
-    board[cord1][cord2] = mark;
-    printBoard();
-  };
-
-  initializeBoard();
 
   return {
+    resetBoard,
     getBoard,
+    getPlayers,
     setBoardCell,
-    printBoard,
-    // getEmptyCells,
   };
 }());
 
+// *** VIEW *** //
+const GameView = (function GameView() {
+  const board = GameModule.getBoard();
+
+  const assembleBoard = () => {
+    const displayBoardArray = board
+      .map((cell) => (!cell ? '|   ' : `| ${cell} `));
+    displayBoardArray.push('|\n');
+    displayBoardArray.splice(6, 0, '|\n');
+    displayBoardArray.splice(3, 0, '|\n');
+    const displayBoard = displayBoardArray.join('');
+    return displayBoard;
+  };
+
+  const render = () => {
+    const boardState = assembleBoard();
+    console.log(boardState);
+  };
+
+  return { render };
+}());
+
+// *** CONTROLLER *** //
 const GameController = (function GameController() {
-  const placeMark = (cord1, cord2, mark) => {
-    const board = Gameboard.getBoard();
-    if (!board[cord1][cord2]) {
-      Gameboard.setBoardCell(cord1, cord2, mark);
-    } else {
-      console.log('Opps!!');
-    }
+  const board = GameModule.getBoard();
+  const players = GameModule.getPlayers();
+
+  const validatePlayerChoice = (playerChoice) => {
+    if (playerChoice < 0 || playerChoice > 8) return false;
+    return board[playerChoice] === '';
   };
 
-  const checkForWinner = () => {
-    // Check for column of all X or all O (use for)?
-    const board = Gameboard.getBoard();
-
-    // check for a row of all X or all O (use filter?)
-    for (let row = 0; row < board.length; row += 1) {
-      if (!board[row].includes('') && !board[row].includes('O')) console.log('X wins');
-      if (!board[row].includes('') && !board[row].includes('X')) console.log('O wins');
-      console.log(board[row]);
+  const getPlayerChoice = (activePlayer) => {
+    let valid = false;
+    let playerChoice;
+    while (!valid) {
+      // eslint-disable-next-line no-alert
+      playerChoice = prompt(`${activePlayer.name}, select your cell (1–9).`) - 1;
+      valid = validatePlayerChoice(playerChoice);
     }
-    // try Array.prototype.every(); https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every
 
+    return playerChoice;
   };
 
-  return { placeMark, checkForWinner };
+  const changePlayer = () => {
+    players.forEach((item) => {
+      // eslint-disable-next-line no-param-reassign
+      item.active = !item.active;
+    });
+  };
+
+  const checkForWin = () => {
+    let win = false;
+
+    // Utility functions
+    const allEqual = (arr, test) => arr.every((val) => val === test);
+    const everyThird = (arr, col) => arr
+      .filter((e, i) => i === col - 1 || i === col + 2 || i === col + 5);
+
+    // Assemble Rows to check for win
+    const rows = [];
+    rows.push(board.slice(0, 3));
+    rows.push(board.slice(3, 6));
+    rows.push(board.slice(6));
+
+    // Assemble Columns to check for win
+    const cols = [];
+    for (let i = 1; i <= 3; i += 1) {
+      cols.push(everyThird(board, i));
+    }
+
+    rows.forEach((row) => {
+      if (allEqual(row, 'X')) win = 'X wins!';
+      if (allEqual(row, 'O')) win = 'O wins!';
+    });
+
+    cols.forEach((col) => {
+      if (allEqual(col, 'X')) win = 'X wins!';
+      if (allEqual(col, 'O')) win = 'O wins!';
+    });
+
+    return win;
+  };
+
+  const takePlayerTurn = () => {
+    // Get active player
+    const activePlayer = players.find((e) => e.active);
+
+    const playerChoice = getPlayerChoice(activePlayer);
+
+    // let valid = false;
+    // let playerChoice;
+    // while (!valid) {
+    //   playerChoice = getPlayerChoice(activePlayer);
+    //   valid = validatePlayerChoice(playerChoice);
+    // }
+
+    GameModule.setBoardCell(activePlayer, playerChoice);
+
+    GameView.render();
+
+    changePlayer();
+  };
+
+  return {
+    getPlayerChoice,
+    validatePlayerChoice,
+    takePlayerTurn,
+    checkForWin,
+  };
 }());
+
+// *** INIT *** //
+// eslint-disable-next-line no-unused-vars
+function GameInit() {
+  // DEV //
+  GameModule.resetBoard();
+  const board = GameModule.getBoard();
+  console.log(board);
+  // DEV //
+  GameView.render();
+  while (!GameController.checkForWin()) {
+    GameController.takePlayerTurn();
+  }
+  console.log(GameController.checkForWin());
+}
 
 // *** JEST SETUP FOR TESTING *** //
 // *** Requires npm install --save-dev jest ***///
@@ -110,5 +188,10 @@ function testJestConnection() {
 
 // If statement to guard for errors in browser (doesn't recognize module)
 if (typeof module === 'object') {
-  module.exports = { testJestConnection };
+  module.exports = {
+    testJestConnection,
+    GameModule,
+    GameView,
+    GameController,
+  };
 }
