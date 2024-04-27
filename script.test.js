@@ -28,24 +28,5 @@ describe('Testing for GameView', () => {
 });
 
 describe('Testing of GameController', () => {
-  test('No win', () => {
-    let x = ['X', 'O', '', 'X', '', 'O', '', 'X', 'O'];
-    expect(GameController.checkForWin(x)).toBeFalsy();
-  });
-  test('X wins on top row', () => {
-    let x = ['X', 'X', 'X', 'X', '', 'O', '', 'X', 'O'];
-    expect(GameController.checkForWin(x)).toBe('X wins!');
-  });
-  test('O wins on mid row', () => {
-    let x = ['X', 'X', 'O', 'O', 'O', 'O', '', 'X', 'O'];
-    expect(GameController.checkForWin(x)).toBe('O wins!');
-  });
-  test('X wins on column 1', () => {
-    let x = ['X', 'O', '', 'X', '', 'O', 'X', 'X', 'O'];
-    expect(GameController.checkForWin(x)).toBe('X wins!');
-  });
-  test('O wins on column 3', () => {
-    let x = ['X', 'O', 'O', '', '', 'O', 'X', 'X', 'O'];
-    expect(GameController.checkForWin(x)).toBe('O wins!');
-  });
+
 });

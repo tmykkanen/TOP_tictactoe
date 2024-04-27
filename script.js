@@ -1,12 +1,4 @@
 /* eslint-disable no-console */
-// PROGRAM PLAN
-// 1. Build game to be played fully in console (controller).
-// - Gameboard()
-// - GameController()
-// 2. Build the ui to display the game state and allow the user to interact with the game (view).
-//  - ScreenController()
-//  - updateScreen()
-//  - clickHandlerBoard()
 
 // GAME FLOW
 // 1. Render empty board
@@ -17,23 +9,30 @@
 // 6. Render board / win
 
 // *** MODULE *** //
-const GameModule = (function Gameboard() {
+
+const GameModule = (function GameModule() {
   const board = ['', '', '', '', '', '', '', '', ''];
+
   const players = [
     {
       name: 'Player 1',
       mark: 'X',
       active: true,
+      winner: false,
     },
     {
       name: 'Player 2',
       mark: 'O',
       active: false,
+      winner: false,
     },
   ];
 
-  const resetBoard = () => {
-    // board = ['', '', '', '', '', '', '', '', ''];
+  const resetGame = () => {
+    board.splice(0, 9);
+    board.push('', '', '', '', '', '', '', '', '');
+    players[0].active = true;
+    players[1].active = false;
   };
 
   const getBoard = () => board;
@@ -45,7 +44,7 @@ const GameModule = (function Gameboard() {
   };
 
   return {
-    resetBoard,
+    resetGame,
     getBoard,
     getPlayers,
     setBoardCell,
@@ -78,6 +77,7 @@ const GameView = (function GameView() {
 const GameController = (function GameController() {
   const board = GameModule.getBoard();
   const players = GameModule.getPlayers();
+  let winMsg = '';
 
   const validatePlayerChoice = (playerChoice) => {
     if (playerChoice < 0 || playerChoice > 8) return false;
@@ -104,36 +104,49 @@ const GameController = (function GameController() {
   };
 
   const checkForWin = () => {
-    let win = false;
+    let gameOver = false;
 
-    // Utility functions
-    const allEqual = (arr, test) => arr.every((val) => val === test);
-    const everyThird = (arr, col) => arr
-      .filter((e, i) => i === col - 1 || i === col + 2 || i === col + 5);
-
-    // Assemble Rows to check for win
-    const rows = [];
-    rows.push(board.slice(0, 3));
-    rows.push(board.slice(3, 6));
-    rows.push(board.slice(6));
-
-    // Assemble Columns to check for win
-    const cols = [];
-    for (let i = 1; i <= 3; i += 1) {
-      cols.push(everyThird(board, i));
+    if (!board.includes('')) {
+      winMsg = 'Tie!';
+      gameOver = true;
+      return gameOver;
     }
 
-    rows.forEach((row) => {
-      if (allEqual(row, 'X')) win = 'X wins!';
-      if (allEqual(row, 'O')) win = 'O wins!';
+    const groupingsToCheck = [];
+
+    // Rows
+    groupingsToCheck.push(
+      [board[0], board[1], board[2]],
+      [board[3], board[4], board[5]],
+      [board[6], board[7], board[8]],
+    );
+    // Columns
+    groupingsToCheck.push(
+      [board[0], board[3], board[6]],
+      [board[1], board[4], board[7]],
+      [board[2], board[5], board[8]],
+    );
+    // Diagonals
+    groupingsToCheck.push(
+      [board[0], board[4], board[8]],
+      [board[2], board[4], board[6]],
+    );
+
+    // Utility test func
+    const allEqual = (arr, test) => arr.every((val) => val === test);
+
+    groupingsToCheck.forEach((row) => {
+      if (allEqual(row, 'X')) {
+        gameOver = true;
+        winMsg = 'X wins!';
+      }
+      if (allEqual(row, 'O')) {
+        gameOver = true;
+        winMsg = 'O wins!';
+      }
     });
 
-    cols.forEach((col) => {
-      if (allEqual(col, 'X')) win = 'X wins!';
-      if (allEqual(col, 'O')) win = 'O wins!';
-    });
-
-    return win;
+    return gameOver;
   };
 
   const takePlayerTurn = () => {
@@ -142,13 +155,6 @@ const GameController = (function GameController() {
 
     const playerChoice = getPlayerChoice(activePlayer);
 
-    // let valid = false;
-    // let playerChoice;
-    // while (!valid) {
-    //   playerChoice = getPlayerChoice(activePlayer);
-    //   valid = validatePlayerChoice(playerChoice);
-    // }
-
     GameModule.setBoardCell(activePlayer, playerChoice);
 
     GameView.render();
@@ -156,28 +162,17 @@ const GameController = (function GameController() {
     changePlayer();
   };
 
-  return {
-    getPlayerChoice,
-    validatePlayerChoice,
-    takePlayerTurn,
-    checkForWin,
+  const playGame = () => {
+    GameModule.resetGame();
+    GameView.render();
+    while (!checkForWin()) {
+      takePlayerTurn();
+    }
+    console.log(winMsg);
   };
-}());
 
-// *** INIT *** //
-// eslint-disable-next-line no-unused-vars
-function GameInit() {
-  // DEV //
-  GameModule.resetBoard();
-  const board = GameModule.getBoard();
-  console.log(board);
-  // DEV //
-  GameView.render();
-  while (!GameController.checkForWin()) {
-    GameController.takePlayerTurn();
-  }
-  console.log(GameController.checkForWin());
-}
+  return { playGame };
+}());
 
 // *** JEST SETUP FOR TESTING *** //
 // *** Requires npm install --save-dev jest ***///
