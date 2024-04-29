@@ -54,60 +54,99 @@ const GameModule = (function GameModule() {
 
 // *** VIEW *** //
 const GameView = (function GameView() {
-  const board = GameModule.getBoard();
+  const { getBoard, getPlayers } = GameModule;
+  const board = getBoard();
+  const players = getPlayers();
+
   const boardContainer = document.querySelector('.board-container');
+  const headerContainer = document.querySelector('.header-container');
 
-  const assembleBoard = () => {
-    const displayBoardArray = board
-      .map((cell) => (!cell ? '|   ' : `| ${cell} `));
-    displayBoardArray.push('|\n');
-    displayBoardArray.splice(6, 0, '|\n');
-    displayBoardArray.splice(3, 0, '|\n');
-    const displayBoard = displayBoardArray.join('');
-    return displayBoard;
-  };
+  // const assembleBoard = () => {
+  //   const displayBoardArray = board
+  //     .map((cell) => (!cell ? '|   ' : `| ${cell} `));
+  //   displayBoardArray.push('|\n');
+  //   displayBoardArray.splice(6, 0, '|\n');
+  //   displayBoardArray.splice(3, 0, '|\n');
+  //   const displayBoard = displayBoardArray.join('');
+  //   return displayBoard;
+  // };
 
-  const renderToConsole = () => {
-    const boardState = assembleBoard();
-    console.log(boardState);
-  };
+  // const renderToConsole = () => {
+  //   const boardState = assembleBoard();
+  //   console.log(boardState);
+  // };
 
-  const render = () => {
+  const render = (gameState) => {
+    console.log(`Gamestate: ${gameState}`);
     boardContainer.innerHTML = '';
+    headerContainer.innerHTML = '';
+
+    const h1 = document.createElement('h1');
+    h1.classList.add('col2');
+    h1.textContent = 'TIC TAC TOE';
+    headerContainer.appendChild(h1);
+
+    if (gameState === 'before') {
+      const elem = document.createElement('button');
+      elem.type = 'button';
+      elem.classList.add('col2');
+      elem.textContent = 'Begin Game';
+      // eslint-disable-next-line no-use-before-define
+      elem.addEventListener('click', () => GameController.playGame());
+      headerContainer.appendChild(elem);
+    }
+
+    if (gameState === 'during') {
+      const activePlayer = players.find((e) => e.active);
+      const elem = document.createElement('h2');
+      elem.classList.add('col2');
+      elem.textContent = `${activePlayer.name}, your turn.`;
+      headerContainer.appendChild(elem);
+    }
+
     for (let cell = 0; cell < board.length; cell += 1) {
       const div = document.createElement('div');
       div.setAttribute('id', cell);
       div.classList.add('board-cell');
       div.textContent = board[cell];
       boardContainer.appendChild(div);
+      div.addEventListener('click', (e) => GameController.takePlayerTurn(e));
     }
   };
 
-  return { renderToConsole, render };
+  return { render };
 }());
 
 // *** CONTROLLER *** //
 const GameController = (function GameController() {
-  const board = GameModule.getBoard();
-  const players = GameModule.getPlayers();
+  const {
+    getBoard,
+    getPlayers,
+    resetGame,
+  } = GameModule;
+  const { render } = GameView;
+
+  const board = getBoard();
+  const players = getPlayers();
+  let gameState;
   let winMsg = '';
 
-  const validatePlayerChoice = (playerChoice) => {
-    if (playerChoice < 0 || playerChoice > 8) return false;
-    return board[playerChoice] === '';
-  };
+  // const validatePlayerChoice = (playerChoice) => {
+  //   if (playerChoice < 0 || playerChoice > 8) return false;
+  //   return board[playerChoice] === '';
+  // };
 
-  const getPlayerChoice = (activePlayer) => {
-    let valid = false;
-    let playerChoice;
-    while (!valid) {
-      // eslint-disable-next-line no-alert
-      playerChoice = prompt(`${activePlayer.name}, select your cell (1–9).`) - 1;
-      valid = validatePlayerChoice(playerChoice);
-    }
+  // const getPlayerChoice = (activePlayer) => {
+  //   let valid = false;
+  //   let playerChoice;
+  //   // while (!valid) {
+  //     // eslint-disable-next-line no-alert
+  //     playerChoice = prompt(`${activePlayer.name}, select your cell (1–9).`) - 1;
+  //   //   valid = validatePlayerChoice(playerChoice);
+  //   // }
 
-    return playerChoice;
-  };
+  //   return playerChoice;
+  // };
 
   const changePlayer = () => {
     players.forEach((item) => {
@@ -162,30 +201,47 @@ const GameController = (function GameController() {
     return gameOver;
   };
 
-  const takePlayerTurn = () => {
+  const takePlayerTurn = (e) => {
     // Get active player
-    const activePlayer = players.find((e) => e.active);
+    const activePlayer = players.find((player) => player.active);
+    const playerChoice = e.target.id;
 
-    const playerChoice = getPlayerChoice(activePlayer);
+    if (board[playerChoice] !== '') return;
 
     GameModule.setBoardCell(activePlayer, playerChoice);
 
-    GameView.render();
-
+    render(gameState);
+    console.log(e.target.id);
+    console.log(activePlayer);
     changePlayer();
   };
 
   const playGame = () => {
+    gameState = 'during';
     GameModule.resetGame();
-    GameView.render();
-    while (!checkForWin()) {
-      takePlayerTurn();
-    }
-    console.log(winMsg);
+    render(gameState);
+
+    // takePlayerTurn();
+    // while (!checkForWin()) {
+    //   takePlayerTurn();
+    // }
+    // console.log(winMsg);
   };
 
-  return { playGame };
+  const initGame = () => {
+    gameState = 'before';
+    resetGame();
+    render(gameState);
+  };
+
+  return {
+    playGame,
+    initGame,
+    takePlayerTurn,
+  };
 }());
+
+GameController.initGame();
 
 // *** JEST SETUP FOR TESTING *** //
 // *** Requires npm install --save-dev jest ***///
