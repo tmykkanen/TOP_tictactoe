@@ -12,6 +12,7 @@
 
 const GameModule = (function GameModule() {
   const board = ['', '', '', '', '', '', '', '', ''];
+  // const board = ['X', '', 'X', 'O', 'X', 'O', 'X', '', 'X'];
 
   const players = [
     {
@@ -54,6 +55,7 @@ const GameModule = (function GameModule() {
 // *** VIEW *** //
 const GameView = (function GameView() {
   const board = GameModule.getBoard();
+  const boardContainer = document.querySelector('.board-container');
 
   const assembleBoard = () => {
     const displayBoardArray = board
@@ -65,12 +67,23 @@ const GameView = (function GameView() {
     return displayBoard;
   };
 
-  const render = () => {
+  const renderToConsole = () => {
     const boardState = assembleBoard();
     console.log(boardState);
   };
 
-  return { render };
+  const render = () => {
+    boardContainer.innerHTML = '';
+    for (let cell = 0; cell < board.length; cell += 1) {
+      const div = document.createElement('div');
+      div.setAttribute('id', cell);
+      div.classList.add('board-cell');
+      div.textContent = board[cell];
+      boardContainer.appendChild(div);
+    }
+  };
+
+  return { renderToConsole, render };
 }());
 
 // *** CONTROLLER *** //
@@ -106,12 +119,6 @@ const GameController = (function GameController() {
   const checkForWin = () => {
     let gameOver = false;
 
-    if (!board.includes('')) {
-      winMsg = 'Tie!';
-      gameOver = true;
-      return gameOver;
-    }
-
     const groupingsToCheck = [];
 
     // Rows
@@ -145,6 +152,12 @@ const GameController = (function GameController() {
         winMsg = 'O wins!';
       }
     });
+
+    if (!board.includes('')) {
+      winMsg = 'Tie!';
+      gameOver = true;
+      return gameOver;
+    }
 
     return gameOver;
   };
