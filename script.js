@@ -11,8 +11,7 @@
 // *** MODULE *** //
 
 const GameModule = (function GameModule() {
-  const board = ['', '', '', '', '', '', '', '', ''];
-  // const board = ['X', '', 'X', 'O', 'X', 'O', 'X', '', 'X'];
+  const board = [];
 
   const players = [
     {
@@ -63,49 +62,30 @@ const GameView = (function GameView() {
   const boardContainer = document.querySelector('.board-container');
   const headerContainer = document.querySelector('.header-container');
 
-  // const assembleBoard = () => {
-  //   const displayBoardArray = board
-  //     .map((cell) => (!cell ? '|   ' : `| ${cell} `));
-  //   displayBoardArray.push('|\n');
-  //   displayBoardArray.splice(6, 0, '|\n');
-  //   displayBoardArray.splice(3, 0, '|\n');
-  //   const displayBoard = displayBoardArray.join('');
-  //   return displayBoard;
-  // };
-
-  // const renderToConsole = () => {
-  //   const boardState = assembleBoard();
-  //   console.log(boardState);
-  // };
-
-  const render = (gameState) => {
-    console.log(`Gamestate: ${gameState}`);
-    boardContainer.innerHTML = '';
+  const renderHeader = (gameState) => {
     headerContainer.innerHTML = '';
 
     const h1 = document.createElement('h1');
-    h1.classList.add('col3');
+    h1.classList.add();
     h1.textContent = 'TIC TAC TOE';
     headerContainer.appendChild(h1);
 
     if (gameState === 'before') {
       const elem = document.createElement('button');
       elem.type = 'button';
-      elem.classList.add('col3');
+      elem.classList.add('center');
       elem.textContent = 'Begin Game';
       // eslint-disable-next-line no-use-before-define
       elem.addEventListener('click', () => GameController.playGame());
       headerContainer.appendChild(elem);
     }
-
     if (gameState === 'during') {
       const activePlayer = players.find((e) => e.active);
       const elem = document.createElement('h2');
-      elem.classList.add('col3');
-      elem.textContent = `${activePlayer.name}, your turn.`;
+      elem.classList.add('center');
+      elem.textContent = `${activePlayer.name} (${activePlayer.mark}), your turn.`;
       headerContainer.appendChild(elem);
     }
-
     if (gameState === 'over') {
       let winMsg = 'Tie!';
 
@@ -116,37 +96,47 @@ const GameView = (function GameView() {
       }
 
       const msg = document.createElement('h2');
-      msg.classList.add('col2');
+      msg.classList.add('left-justify');
       msg.textContent = winMsg;
       headerContainer.appendChild(msg);
 
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.classList.add('col4');
+      btn.classList.add('right-justify');
       btn.textContent = 'Play Again';
       // eslint-disable-next-line no-use-before-define
       btn.addEventListener('click', () => GameController.playGame());
       headerContainer.appendChild(btn);
     }
+  };
+
+  const render = (gameState) => {
+    renderHeader(gameState);
+
+    boardContainer.innerHTML = '';
 
     for (let cell = 0; cell < board.length; cell += 1) {
       const div = document.createElement('div');
       div.setAttribute('id', cell);
       div.classList.add('board-cell');
       div.textContent = board[cell];
+      if (board[cell] === 'X') div.classList.add('X');
+      if (board[cell] === 'O') div.classList.add('O');
       boardContainer.appendChild(div);
-      div.addEventListener('click', (e) => GameController.takePlayerTurn(e));
-      div.addEventListener('mouseover', () => {
-        if (board[cell] === '' && gameState === 'during') {
-          div.classList.add('open-cell-hover');
-          const activePlayer = players.find((player) => player.active);
-          div.innerHTML = activePlayer.mark;
-        }
-      });
-      div.addEventListener('mouseout', () => {
-        div.innerHTML = board[cell];
-        div.classList.remove('open-cell-hover');
-      });
+      if (gameState === 'during') {
+        div.addEventListener('click', (e) => GameController.takePlayerTurn(e));
+        div.addEventListener('mouseover', () => {
+          if (board[cell] === '') {
+            div.classList.add('open-cell-hover');
+            const activePlayer = players.find((player) => player.active);
+            div.innerHTML = activePlayer.mark;
+          }
+        });
+        div.addEventListener('mouseout', () => {
+          div.innerHTML = board[cell];
+          div.classList.remove('open-cell-hover');
+        });
+      }
     }
   };
 
@@ -159,30 +149,13 @@ const GameController = (function GameController() {
     getBoard,
     getPlayers,
     resetGame,
+    setBoardCell,
   } = GameModule;
   const { render } = GameView;
 
   const board = getBoard();
   const players = getPlayers();
   let gameState;
-  let winMsg = '';
-
-  // const validatePlayerChoice = (playerChoice) => {
-  //   if (playerChoice < 0 || playerChoice > 8) return false;
-  //   return board[playerChoice] === '';
-  // };
-
-  // const getPlayerChoice = (activePlayer) => {
-  //   let valid = false;
-  //   let playerChoice;
-  //   // while (!valid) {
-  //     // eslint-disable-next-line no-alert
-  //     playerChoice = prompt(`${activePlayer.name}, select your cell (1–9).`) - 1;
-  //   //   valid = validatePlayerChoice(playerChoice);
-  //   // }
-
-  //   return playerChoice;
-  // };
 
   const changePlayer = () => {
     players.forEach((item) => {
@@ -192,8 +165,6 @@ const GameController = (function GameController() {
   };
 
   const checkForWin = () => {
-    let gameOver = false;
-
     const groupingsToCheck = [];
 
     // Rows
@@ -219,27 +190,18 @@ const GameController = (function GameController() {
 
     groupingsToCheck.forEach((row) => {
       if (allEqual(row, 'X')) {
-        gameOver = true;
         gameState = 'over';
         players[0].winner = true;
-        winMsg = 'X wins!';
       }
       if (allEqual(row, 'O')) {
-        gameOver = true;
         gameState = 'over';
         players[1].winner = true;
-        winMsg = 'O wins!';
       }
     });
 
     if (!board.includes('')) {
-      winMsg = 'Tie!';
-      gameOver = true;
       gameState = 'over';
-      return gameOver;
     }
-
-    return gameOver;
   };
 
   const takePlayerTurn = (e) => {
@@ -247,14 +209,13 @@ const GameController = (function GameController() {
     const activePlayer = players.find((player) => player.active);
     const playerChoice = e.target.id;
 
+    // Check for valid choice
     if (board[playerChoice] !== '') return;
-
-    GameModule.setBoardCell(activePlayer, playerChoice);
+    setBoardCell(activePlayer, playerChoice);
 
     checkForWin();
-
-    render(gameState);
     changePlayer();
+    render(gameState);
   };
 
   const playGame = () => {
